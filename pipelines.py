@@ -517,6 +517,7 @@ class Pipeline(_ScikitCompat):
         self,
         model: Union["PreTrainedModel", "TFPreTrainedModel", str],
         tokenizer: PreTrainedTokenizer,
+        config: PretrainedConfig,
         modelcard: Optional[ModelCard] = None,
         framework: Optional[str] = None,
         task: str = "",
@@ -534,6 +535,7 @@ class Pipeline(_ScikitCompat):
         self.graph_path = graph_path
         self.task = task
         self.model = model
+        self.config = config
         self.tokenizer = tokenizer
         self.modelcard = modelcard
         self.framework = framework
@@ -711,6 +713,68 @@ class Pipeline(_ScikitCompat):
         model_inputs = self.tokenizer("My name is Bert", return_tensors="pt")
         for _ in range(n):
             self._forward_onnx(model_inputs)
+
+
+@add_end_docstrings(
+    PIPELINE_INIT_ARGS,
+    r"""
+        return_all_scores (:obj:`bool`, `optional`, defaults to :obj:`False`):
+            Whether to return all prediction scores or just the one of the predicted class.
+    """,
+)
+class TextClassificationPipeline(Pipeline):
+    """
+    Text classification pipeline using any :obj:`ModelForSequenceClassification`. See the
+    `sequence classification examples <../task_summary.html#sequence-classification>`__ for more information.
+
+    This text classification pipeline can currently be loaded from :func:`~transformers.pipeline` using the following
+    task identifier: :obj:`"sentiment-analysis"` (for classifying sequences according to positive or negative
+    sentiments).
+
+    The models that this pipeline can use are models that have been fine-tuned on a sequence classification task.
+    See the up-to-date list of available models on
+    `huggingface.co/models <https://huggingface.co/models?filter=text-classification>`__.
+    """
+
+    def __init__(self, return_all_scores: bool = False, **kwargs):
+        super().__init__(**kwargs)
+
+        # self.check_model_type(
+        #     TF_MODEL_FOR_SEQUENCE_CLASSIFICATION_MAPPING
+        #     if self.framework == "tf"
+        #     else MODEL_FOR_SEQUENCE_CLASSIFICATION_MAPPING
+        # )
+
+        self.return_all_scores = return_all_scores
+
+    def __call__(self, *args, **kwargs):
+        """
+        Classify the text(s) given as inputs.
+
+        Args:
+            args (:obj:`str` or :obj:`List[str]`):
+                One or several textts (or one list of prompts) to classify.
+
+        Return:
+            A list or a list of list of :obj:`dict`: Each result comes as list of dictionaries with the
+            following keys:
+
+            - **label** (:obj:`str`) -- The label predicted.
+            - **score** (:obj:`float`) -- The corresponding probability.
+
+            If ``self.return_all_scores=True``, one such dictionary is returned per label.
+        """
+        outputs = super().__call__(*args, **kwargs)
+        scores = np.exp(outputs) / np.exp(outputs).sum(-1, keepdims=True)
+        if self.return_all_scores:
+            return [
+                [{"label": self.config.id2label[i], "score": score.item()} for i, score in enumerate(item)]
+                for item in scores
+            ]
+        else:
+            return [
+                {"label": self.config.id2label[item.argmax()], "score": item.max().item()} for item in scores
+            ]
 
 
 class QuestionAnsweringArgumentHandler(ArgumentHandler):
@@ -1076,6 +1140,17 @@ SUPPORTED_TASKS = {
     #     "pt": AutoModel if is_torch_available() else None,
     #     "default": {"model": {"pt": "distilbert-base-cased", "tf": "distilbert-base-cased"}},
     # },
+    "sentiment-analysis": {
+        "impl": TextClassificationPipeline,
+        "tf": TFAutoModelForSequenceClassification if is_tf_available() else None,
+        "pt": AutoModelForSequenceClassification if is_torch_available() else None,
+        "default": {
+            "model": {
+                "pt": "distilbert-base-uncased-finetuned-sst-2-english",
+                "tf": "distilbert-base-uncased-finetuned-sst-2-english",
+            },
+        },
+    },
     "question-answering": {
         "impl": QuestionAnsweringPipeline,
         "tf": TFAutoModelForQuestionAnswering if is_tf_available() else None,
@@ -1207,8 +1282,9 @@ def pipeline(
             tokenizer = AutoTokenizer.from_pretrained(tokenizer)
 
     # Instantiate config if needed
-    if isinstance(config, str):
-        config = AutoConfig.from_pretrained(config)
+    # if isinstance(config, str):
+    #     config = AutoConfig.from_pretrained(config)
+    config = AutoConfig.from_pretrained(model)
 
     # Instantiate modelcard if needed
     if isinstance(modelcard, str):
@@ -1236,4 +1312,4 @@ def pipeline(
             )
         model = model_class.from_pretrained(model, config=config, **model_kwargs)
 
-    return task_class(model=model, tokenizer=tokenizer, modelcard=modelcard, framework=framework, task=task, onnx=onnx, graph_path=graph_path, **kwargs)
+    return task_class(model=model, tokenizer=tokenizer, modelcard=modelcard, framework=framework, task=task, onnx=onnx, graph_path=graph_path, config=config, **kwargs)
