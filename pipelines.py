@@ -1535,11 +1535,10 @@ SUPPORTED_TASKS = {
 
 def pipeline(
     task: str,
-    model: Optional = None,
+    model: Optional[str] = None,
     config: Optional[Union[str, PretrainedConfig]] = None,
     tokenizer: Optional[Union[str, PreTrainedTokenizer]] = None,
     framework: Optional[str] = None,
-    graph_path: Optional[str] = None,
     onnx: bool = True,
     **kwargs
 ) -> Pipeline:
@@ -1663,11 +1662,12 @@ def pipeline(
         modelcard = ModelCard.from_pretrained(modelcard)
 
     # Instantiate model if needed
-    if graph_path is None and onnx:
-        graph_name = f"{os.path.basename(model)}.onnx"
-        graph_path = Path(f"onnx/{model}/{graph_name}")
-
-    if isinstance(model, str) and not os.path.exists(graph_path):
+    graph_name = f"{os.path.basename(model)}.onnx"
+    graph_path = Path(f"onnx/{model}/{graph_name}")
+    
+    # TODO: assert when model is not `str`
+    # Instantiate the model if graph is not found or if doing normal inference
+    if (onnx and not os.path.exists(graph_path)) or not onnx:
         # Handle transparent TF/PT model conversion
         model_kwargs = {}
         if framework == "pt" and model.endswith(".h5"):
@@ -1684,4 +1684,14 @@ def pipeline(
             )
         model = model_class.from_pretrained(model, config=config, **model_kwargs)
 
-    return task_class(model=model, tokenizer=tokenizer, modelcard=modelcard, framework=framework, task=task, onnx=onnx, graph_path=graph_path, config=config, **kwargs)
+    return task_class(
+        model=model,
+        tokenizer=tokenizer,
+        modelcard=modelcard,
+        framework=framework,
+        task=task,
+        onnx=onnx,
+        graph_path=graph_path,
+        config=config,
+        **kwargs
+    )
