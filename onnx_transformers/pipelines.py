@@ -66,6 +66,9 @@ if TYPE_CHECKING:
     from transformers.modeling_utils import PreTrainedModel
 
 
+ONNX_CACHE_DIR = Path(os.path.dirname(__file__)).parent.joinpath(".onnx")
+
+
 logger = logging.get_logger(__name__)
 
 from os import environ
@@ -525,7 +528,7 @@ class Pipeline(_ScikitCompat):
         device: int = -1,
         binary_output: bool = False,
         onnx: bool = True,
-        graph_path: Optional[str] = None
+        graph_path: Optional[Path] = None
     ):
 
         if framework is None:
@@ -549,8 +552,8 @@ class Pipeline(_ScikitCompat):
         
         # Export the graph
         if onnx:
-            # graph_path = Path(f"onnx/{model}.onnx")
-            input_names_path = graph_path.parent/f"{os.path.basename(graph_path)}.input_names.json"
+            # input_names_path = graph_path.parent/f"{os.path.basename(graph_path)}.input_names.json"
+            input_names_path = graph_path.parent.joinpath(f"{os.path.basename(graph_path)}.input_names.json")
             if not os.path.exists(graph_path):
                 print(f"Creating folder {graph_path.parent}")
                 os.makedirs(graph_path.parent.as_posix())
@@ -788,7 +791,10 @@ class FeatureExtractionPipeline(Pipeline):
         Return:
             A nested list of :obj:`float`: The features computed by the model.
         """
-        return super().__call__(*args, **kwargs).tolist()
+        output = super().__call__(*args, **kwargs)
+        if self.onnx:
+          return output[0].tolist()
+        return output.tolist()
 
 
 @add_end_docstrings(
@@ -1739,7 +1745,8 @@ def pipeline(
 
     # Instantiate model if needed
     graph_name = f"{os.path.basename(model)}.onnx"
-    graph_path = Path(f"onnx/{model}/{graph_name}")
+    # graph_path = Path(f"onnx/{model}/{graph_name}")
+    graph_path = ONNX_CACHE_DIR.joinpath(model, graph_name)
     
     # TODO: assert when model is not `str`
     # Instantiate the model if graph is not found or if doing normal inference
