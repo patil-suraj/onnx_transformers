@@ -26,7 +26,7 @@ setup(
     install_requires=[
         "transformers>=3.1.0",
         "onnxruntime>=1.4.0",
-        "onnxruntime-tools>=1.4.2"
+        "onnxruntime-tools>=1.4.2",
         "psutil",
     ],
     extras_require=extras,
