@@ -8,14 +8,14 @@ from abc import ABC, abstractmethod
 from contextlib import contextmanager
 from itertools import chain
 from os.path import abspath, exists
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Optional, Sequence, Tuple, Union
 from uuid import UUID
-from pathlib import Path
 
 import numpy as np
-
 from transformers.configuration_auto import AutoConfig
 from transformers.configuration_utils import PretrainedConfig
+from transformers.convert_graph_to_onnx import convert, convert_pytorch, convert_tensorflow, infer_shapes
 from transformers.data import SquadExample, squad_convert_examples_to_features
 from transformers.file_utils import add_end_docstrings, is_tf_available, is_torch_available
 from transformers.modelcard import ModelCard
@@ -24,12 +24,10 @@ from transformers.tokenization_bert import BasicTokenizer
 from transformers.tokenization_utils import PreTrainedTokenizer
 from transformers.tokenization_utils_base import BatchEncoding, PaddingStrategy
 from transformers.utils import logging
-from transformers.convert_graph_to_onnx import convert, convert_pytorch, convert_tensorflow, infer_shapes
 
 
 if is_tf_available():
     import tensorflow as tf
-
     from transformers.modeling_tf_auto import (
         TF_MODEL_FOR_QUESTION_ANSWERING_MAPPING,
         TF_MODEL_FOR_SEQUENCE_CLASSIFICATION_MAPPING,
@@ -45,7 +43,6 @@ if is_tf_available():
 
 if is_torch_available():
     import torch
-
     from transformers.modeling_auto import (
         MODEL_FOR_MASKED_LM_MAPPING,
         MODEL_FOR_QUESTION_ANSWERING_MAPPING,
@@ -72,29 +69,32 @@ ONNX_CACHE_DIR = Path(os.path.dirname(__file__)).parent.joinpath(".onnx")
 logger = logging.get_logger(__name__)
 
 from os import environ
+
 from psutil import cpu_count
+
 
 # Constants from the performance optimization available in onnxruntime
 # It needs to be done before importing onnxruntime
 environ["OMP_NUM_THREADS"] = str(cpu_count(logical=True))
-environ["OMP_WAIT_POLICY"] = 'ACTIVE'
+environ["OMP_WAIT_POLICY"] = "ACTIVE"
 
-from onnxruntime import InferenceSession, SessionOptions, GraphOptimizationLevel, get_all_providers
+from onnxruntime import GraphOptimizationLevel, InferenceSession, SessionOptions, get_all_providers
 
-def create_model_for_provider(model_path: str, provider: str) -> InferenceSession: 
-  
-  assert provider in get_all_providers(), f"provider {provider} not found, {get_all_providers()}"
 
-  # Few properties that might have an impact on performances (provided by MS)
-  options = SessionOptions()
-  options.intra_op_num_threads = 1
-  options.graph_optimization_level = GraphOptimizationLevel.ORT_ENABLE_ALL
+def create_model_for_provider(model_path: str, provider: str) -> InferenceSession:
 
-  # Load the model as a graph and prepare the CPU backend 
-  session = InferenceSession(model_path, options, providers=[provider])
-  session.disable_fallback()
+    assert provider in get_all_providers(), f"provider {provider} not found, {get_all_providers()}"
 
-  return session
+    # Few properties that might have an impact on performances (provided by MS)
+    options = SessionOptions()
+    options.intra_op_num_threads = 1
+    options.graph_optimization_level = GraphOptimizationLevel.ORT_ENABLE_ALL
+
+    # Load the model as a graph and prepare the CPU backend
+    session = InferenceSession(model_path, options, providers=[provider])
+    session.disable_fallback()
+
+    return session
 
 
 def get_framework(model=None):
@@ -528,7 +528,7 @@ class Pipeline(_ScikitCompat):
         device: int = -1,
         binary_output: bool = False,
         onnx: bool = True,
-        graph_path: Optional[Path] = None
+        graph_path: Optional[Path] = None,
     ):
 
         if framework is None:
@@ -549,14 +549,14 @@ class Pipeline(_ScikitCompat):
         # Special handling
         if self.framework == "pt" and self.device.type == "cuda" and (not onnx):
             self.model = self.model.to(self.device)
-        
+
         # Export the graph
         if onnx:
             input_names_path = graph_path.parent.joinpath(f"{os.path.basename(graph_path)}.input_names.json")
             print(input_names_path)
             if not graph_path.exists() or not input_names_path.exists():
                 self._export_onnx_graph(input_names_path)
-            
+
             self.onnx_model = create_model_for_provider(str(graph_path), "CPUExecutionProvider")
             self.input_names = json.load(open(input_names_path))
             self._warup_onnx_graph()
@@ -696,7 +696,7 @@ class Pipeline(_ScikitCompat):
             return predictions
         else:
             return predictions.numpy()
-    
+
     def _export_onnx_graph(self, input_names_path: Path):
         # if graph exists, but we are here then it means something went wrong in previous load
         # so delete old graph
@@ -709,22 +709,22 @@ class Pipeline(_ScikitCompat):
         if not self.graph_path.parent.exists():
             print(f"Creating folder {self.graph_path.parent}")
             os.makedirs(self.graph_path.parent.as_posix())
-        
+
         if self.framework == "pt":
             convert_pytorch(self, opset=11, output=self.graph_path, use_external_format=False)
         else:
             convert_tensorflow(self, opset=11, output=self.graph_path)
-        
+
         # save input names
         self.input_names = infer_shapes(self, "pt")[0]
         with open(input_names_path, "w") as f:
             json.dump(self.input_names, f)
-    
+
     def _forward_onnx(self, inputs, return_tensors=False):
         inputs_onnx = {k: v.cpu().detach().numpy() for k, v in inputs.items() if k in self.input_names}
         predictions = self.onnx_model.run(None, inputs_onnx)
         return predictions
-    
+
     def _warup_onnx_graph(self, n=10):
         model_inputs = self.tokenizer("My name is Bert", return_tensors="pt")
         for _ in range(n):
@@ -791,7 +791,7 @@ class FeatureExtractionPipeline(Pipeline):
             device=device,
             binary_output=True,
             task=task,
-            **kwargs
+            **kwargs,
         )
 
     def __call__(self, *args, **kwargs):
@@ -806,7 +806,7 @@ class FeatureExtractionPipeline(Pipeline):
         """
         output = super().__call__(*args, **kwargs)
         if self.onnx:
-          return output[0].tolist()
+            return output[0].tolist()
         return output.tolist()
 
 
@@ -867,9 +867,7 @@ class TextClassificationPipeline(Pipeline):
                 for item in scores
             ]
         else:
-            return [
-                {"label": self.config.id2label[item.argmax()], "score": item.max().item()} for item in scores
-            ]
+            return [{"label": self.config.id2label[item.argmax()], "score": item.max().item()} for item in scores]
 
 
 class ZeroShotClassificationArgumentHandler(ArgumentHandler):
@@ -1061,7 +1059,7 @@ class TokenClassificationPipeline(Pipeline):
             task=task,
             config=config,
             onnx=onnx,
-            graph_path=graph_path
+            graph_path=graph_path,
         )
 
         # self.check_model_type(
@@ -1108,10 +1106,10 @@ class TokenClassificationPipeline(Pipeline):
                 input_ids = tokens["input_ids"].cpu().numpy()[0]
             else:
                 tokens = self.tokenizer(
-                  sentence,
-                  return_attention_mask=False,
-                  return_tensors=self.framework,
-                  truncation=True,
+                    sentence,
+                    return_attention_mask=False,
+                    return_tensors=self.framework,
+                    truncation=True,
                 )
                 # Manage correct placement of the tensors
                 with self.device_placement():
@@ -1628,6 +1626,7 @@ SUPPORTED_TASKS = {
     },
 }
 
+
 def pipeline(
     task: str,
     model: Optional[str] = None,
@@ -1760,7 +1759,7 @@ def pipeline(
     graph_name = f"{os.path.basename(model)}.onnx"
     # graph_path = Path(f"onnx/{model}/{graph_name}")
     graph_path = ONNX_CACHE_DIR.joinpath(model, graph_name)
-    
+
     # TODO: assert when model is not `str`
     # Instantiate the model if graph is not found or if doing normal inference
     if (onnx and not os.path.exists(graph_path)) or not onnx:
@@ -1789,5 +1788,5 @@ def pipeline(
         onnx=onnx,
         graph_path=graph_path,
         config=config,
-        **kwargs
+        **kwargs,
     )
