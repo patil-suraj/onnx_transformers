@@ -552,26 +552,16 @@ class Pipeline(_ScikitCompat):
         
         # Export the graph
         if onnx:
-            # input_names_path = graph_path.parent/f"{os.path.basename(graph_path)}.input_names.json"
             input_names_path = graph_path.parent.joinpath(f"{os.path.basename(graph_path)}.input_names.json")
-            if not os.path.exists(graph_path):
-                print(f"Creating folder {graph_path.parent}")
-                os.makedirs(graph_path.parent.as_posix())
-                print(input_names_path)
-                if framework == "pt":
-                    convert_pytorch(self, opset=11, output=graph_path, use_external_format=False)
-                else:
-                    convert_tensorflow(self, opset=11, output=graph_path)
-                
-                self.input_names = infer_shapes(self, "pt")[0]
-                if not os.path.exists(input_names_path):
-                    with open(input_names_path, "w") as f:
-                        json.dump(self.input_names, f)
+            print(input_names_path)
+            if not graph_path.exists() or not input_names_path.exists():
+                self._export_onnx_graph(input_names_path)
             
             self.onnx_model = create_model_for_provider(str(graph_path), "CPUExecutionProvider")
             self.input_names = json.load(open(input_names_path))
             self._warup_onnx_graph()
 
+        # TODO: handle this
         # Update config with task specific parameters
         # task_specific_params = self.model.config.task_specific_params
         # if task_specific_params is not None and task in task_specific_params:
@@ -706,6 +696,29 @@ class Pipeline(_ScikitCompat):
             return predictions
         else:
             return predictions.numpy()
+    
+    def _export_onnx_graph(self, input_names_path: Path):
+        # if graph exists, but we are here then it means something went wrong in previous load
+        # so delete old graph
+        if self.graph_path.exists():
+            self.graph_path.unlink()
+        if input_names_path.exists():
+            input_names_path.unlink()
+
+        # create parent dir
+        if not self.graph_path.parent.exists():
+            print(f"Creating folder {self.graph_path.parent}")
+            os.makedirs(self.graph_path.parent.as_posix())
+        
+        if self.framework == "pt":
+            convert_pytorch(self, opset=11, output=self.graph_path, use_external_format=False)
+        else:
+            convert_tensorflow(self, opset=11, output=self.graph_path)
+        
+        # save input names
+        self.input_names = infer_shapes(self, "pt")[0]
+        with open(input_names_path, "w") as f:
+            json.dump(self.input_names, f)
     
     def _forward_onnx(self, inputs, return_tensors=False):
         inputs_onnx = {k: v.cpu().detach().numpy() for k, v in inputs.items() if k in self.input_names}
