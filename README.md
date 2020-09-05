@@ -1,6 +1,6 @@
 # onnx_transformers
 
-Accelerated NLP pipelines for fast inference 🚀. Built with 🤗Transformers and ONNX runtime.
+Accelerated NLP pipelines for fast inference 🚀 on CPU. Built with 🤗Transformers and ONNX runtime.
 
 ## Installation:
 ```bash
