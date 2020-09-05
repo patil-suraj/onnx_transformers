@@ -16,17 +16,22 @@ from onnx_transformers import pipeline
 
 # Initialize a pipeline by passing the task name and 
 # set onnx to True (default value is also True)
->> nlp = pipeline("sentiment-analysis", onnx=True)
->> nlp("Transformers and onnx runtime is an awesome combo!")   
+>>> nlp = pipeline("sentiment-analysis", onnx=True)
+>>> nlp("Transformers and onnx runtime is an awesome combo!")
+[{'label': 'POSITIVE', 'score': 0.999721109867096}]  
 ```
 
-Or provide a different model using the `model` argument
+Or provide a different model using the `model` argument.
 
 ```python3
 from onnx_transformers import pipeline
 
->> nlp = pipeline("sentiment-analysis", model="extattack/roberta-base-SST-2", onnx=True)
->> nlp("Transformers and onnx runtime is an awesome combo!")   
+>>> nlp = pipeline("question-answering", model="deepset/roberta-base-squad2", onnx=True)
+>>> nlp({
+  "question": "What is ONNX Runtime ?", 
+  "context": "ONNX Runtime is a highly performant single inference engine for multiple platforms and hardware"
+})
+{'answer': 'highly performant single inference engine for multiple platforms and hardware', 'end': 94, 'score': 0.751201868057251, 'start': 18}
 ```
 
 Set `onnx` to `False` for standard torch inference.
