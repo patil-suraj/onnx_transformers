@@ -3,11 +3,15 @@
 Accelerated NLP pipelines for fast inference 🚀 on CPU. Built with 🤗Transformers and ONNX runtime.
 
 ## Installation:
+---
+
 ```bash
 pip install git+https://github.com/patil-suraj/onnx_transformers
 ```
 
 ## Usage:
+---
+
 > *NOTE* : This is an experimental project and only tested with PyTorch
 
 The pipeline API is similer to transformers pipeline with just few differences which are explained below.
@@ -50,3 +54,21 @@ Calling the pipeline for the first time loads the model, creates the onnx graph 
 The key difference between HF pipeline and onnx_transformers is that the `model` parameter should always be a `string` (path or url to the saved model). Also the `zero-shot-classification` pipeline here uses `roberta-large-mnli` as default model instead of `facebook/bart-large-mnli` as BART is not yet tested with onnx runtime.
 
 
+## Benchmarks
+---
+
+For detailed benchmarks and other information refer to this blog post and notebook.
+- [Accelerate your NLP pipelines using Hugging Face Transformers and ONNX Runtime](https://medium.com/microsoftazure/accelerate-your-nlp-pipelines-using-hugging-face-transformers-and-onnx-runtime-2443578f4333)
+- [Exporting 🤗 transformers model to ONNX](https://github.com/huggingface/transformers/blob/master/notebooks/04-onnx-export.ipynb)
+
+To benchmark the pipelines in this repo, see the [benchmark_pipelines](notebooks/benchmark_pipelines.ipynb) notebook. 
+>(Note: These are not yet comprehensive benchmarks.)
+
+**Benchmark `feature-extraction` pipeline** 
+
+![](data/feature_extraction_pipeline_benchmark.png)
+
+
+**Benchmark `question-answering` pipeline**
+
+![](data/qa_pipeline_benchmark.png)
