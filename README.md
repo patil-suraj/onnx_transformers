@@ -14,7 +14,7 @@ pip install git+https://github.com/patil-suraj/onnx_transformers
 
 > *NOTE* : This is an experimental project and only tested with PyTorch
 
-The pipeline API is similer to transformers pipeline with just few differences which are explained below.
+The pipeline API is similar to transformers [pipeline](https://huggingface.co/transformers/main_classes/pipelines.html) with just a few differences which are explained below.
 
 ```python
 from onnx_transformers import pipeline
@@ -45,14 +45,14 @@ You can create `Pipeline` objects for the following down-stream tasks:
 
  - `feature-extraction`: Generates a tensor representation for the input sequence
  - `ner`: Generates named entity mapping for each word in the input sequence.
- - `sentiment-analysis`: Gives the polarity (positive / negative) of the whole input sequence. Can be used for any text classfication model.
- - `question-answering`: Provided some context and a question refering to the context, it will extract the answer to the question in the context.
+ - `sentiment-analysis`: Gives the polarity (positive / negative) of the whole input sequence. Can be used for any text classification model.
+ - `question-answering`: Provided some context and a question referring to the context, it will extract the answer to the question in the context.
  - `zero-shot-classification`:
   
 
-Calling the pipeline for the first time loads the model, creates the onnx graph and caches it for future use. Due to this the first load will take some time. Subsequent calls to the same model will load the onnx graph automatically from the cache.
+Calling the pipeline for the first time loads the model, creates the onnx graph, and caches it for future use. Due to this, the first load will take some time. Subsequent calls to the same model will load the onnx graph automatically from the cache.
 
-The key difference between HF pipeline and onnx_transformers is that the `model` parameter should always be a `string` (path or url to the saved model). Also the `zero-shot-classification` pipeline here uses `roberta-large-mnli` as default model instead of `facebook/bart-large-mnli` as BART is not yet tested with onnx runtime.
+The key difference between HF pipeline and onnx_transformers is that the `model` parameter should always be a `string` (path or url to the saved model). Also, the `zero-shot-classification` pipeline here uses `roberta-large-mnli` as default model instead of `facebook/bart-large-mnli` as BART is not yet tested with onnx runtime.
 
 
 ## Benchmarks
