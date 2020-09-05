@@ -1,6 +1,6 @@
 # onnx_transformers
 
-![onnx_transformers](https://github.com/patil-suraj/onnx_transformers/blob/master/data/bert_on_rocket.jpeg?raw=True)
+![onnx_transformers](https://github.com/patil-suraj/onnx_transformers/blob/master/data/socail_previe.jpeg?raw=True)
 
 Accelerated NLP pipelines for fast inference 🚀 on CPU. Built with 🤗Transformers and ONNX runtime.
 
