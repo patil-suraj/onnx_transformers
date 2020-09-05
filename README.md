@@ -57,6 +57,8 @@ The key difference between HF pipeline and onnx_transformers is that the `model`
 
 ## Benchmarks
 
+> Note: For some reason, onnx is slow on colab notebook so you won't notice any speed-up there. Benchmark it on your own hardware.
+
 For detailed benchmarks and other information refer to this blog post and notebook.
 - [Accelerate your NLP pipelines using Hugging Face Transformers and ONNX Runtime](https://medium.com/microsoftazure/accelerate-your-nlp-pipelines-using-hugging-face-transformers-and-onnx-runtime-2443578f4333)
 - [Exporting 🤗 transformers model to ONNX](https://github.com/huggingface/transformers/blob/master/notebooks/04-onnx-export.ipynb)
