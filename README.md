@@ -16,6 +16,8 @@ pip install git+https://github.com/patil-suraj/onnx_transformers
 
 The pipeline API is similar to transformers [pipeline](https://huggingface.co/transformers/main_classes/pipelines.html) with just a few differences which are explained below.
 
+Just provide the path/url to the model and it'll download the model if needed from the [hub](https://huggingface.co/models) and automatically create onnx graph and run inference.
+
 ```python
 from onnx_transformers import pipeline
 
