@@ -32,7 +32,7 @@ setup(
     extras_require=extras,
     python_requires=">=3.6.0",
     classifiers=[
-        "Development Status :: 1 - Alpha",
+        "Development Status :: 3 - Alpha",
         "Intended Audience :: Developers",
         "License :: OSI Approved :: Apache Software License",
         "Operating System :: OS Independent",
