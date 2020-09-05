@@ -58,7 +58,7 @@ For detailed benchmarks and other information refer to this blog post and notebo
 - [Accelerate your NLP pipelines using Hugging Face Transformers and ONNX Runtime](https://medium.com/microsoftazure/accelerate-your-nlp-pipelines-using-hugging-face-transformers-and-onnx-runtime-2443578f4333)
 - [Exporting 🤗 transformers model to ONNX](https://github.com/huggingface/transformers/blob/master/notebooks/04-onnx-export.ipynb)
 
-To benchmark the pipelines in this repo, see the [benchmark_pipelines]([notebooks/benchmark_pipelines.ipynb](https://github.com/patil-suraj/onnx_transformers/blob/master/notebooks/benchmark_pipelines.ipynb)) notebook. 
+To benchmark the pipelines in this repo, see the [benchmark_pipelines](https://github.com/patil-suraj/onnx_transformers/blob/master/notebooks/benchmark_pipelines.ipynb) notebook. 
 >(Note: These are not yet comprehensive benchmarks.)
 
 **Benchmark `feature-extraction` pipeline** 
