@@ -1,5 +1,7 @@
 # onnx_transformers
 
+![onnx_transformers](https://github.com/patil-suraj/onnx_transformers/blob/master/data/bert_on_rocket.jpeg?raw=True)
+
 Accelerated NLP pipelines for fast inference 🚀 on CPU. Built with 🤗Transformers and ONNX runtime.
 
 ## Installation:
@@ -13,7 +15,8 @@ pip install git+https://github.com/patil-suraj/onnx_transformers
 > *NOTE* : This is an experimental project and only tested with PyTorch
 
 The pipeline API is similer to transformers pipeline with just few differences which are explained below.
-```python3
+
+```python
 from onnx_transformers import pipeline
 
 # Initialize a pipeline by passing the task name and 
@@ -25,7 +28,7 @@ from onnx_transformers import pipeline
 
 Or provide a different model using the `model` argument.
 
-```python3
+```python
 from onnx_transformers import pipeline
 
 >>> nlp = pipeline("question-answering", model="deepset/roberta-base-squad2", onnx=True)
