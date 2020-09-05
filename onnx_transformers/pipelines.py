@@ -1734,9 +1734,8 @@ def pipeline(
         else:
             tokenizer = AutoTokenizer.from_pretrained(tokenizer)
 
-    # Instantiate config if needed
-    if isinstance(config, str):
-        config = AutoConfig.from_pretrained(config)
+    # Instantiate config
+    config = AutoConfig.from_pretrained(model)
 
     # Instantiate modelcard if needed
     if isinstance(modelcard, str):
