@@ -1,10 +1,8 @@
 import unittest
-from pathlib import Path
 
 import torch
 from onnx_transformers import pipeline
 from onnxruntime import InferenceSession
-from transformers.testing_utils import require_tf, require_torch, slow
 
 
 class OnnxExportTestCase(unittest.TestCase):

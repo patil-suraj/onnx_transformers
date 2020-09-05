@@ -1,21 +1,23 @@
+# this code is taken and adapted from https://github.com/huggingface/transformers/blob/master/src/transformers/pipelines.py
+
 import csv
 import json
 import os
 import pickle
 import sys
-import uuid
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
 from itertools import chain
 from os.path import abspath, exists
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Optional, Sequence, Tuple, Union
-from uuid import UUID
 
 import numpy as np
+from onnxruntime import GraphOptimizationLevel, InferenceSession, SessionOptions, get_all_providers
+from psutil import cpu_count
 from transformers.configuration_auto import AutoConfig
 from transformers.configuration_utils import PretrainedConfig
-from transformers.convert_graph_to_onnx import convert, convert_pytorch, convert_tensorflow, infer_shapes
+from transformers.convert_graph_to_onnx import convert_pytorch, convert_tensorflow, infer_shapes
 from transformers.data import SquadExample, squad_convert_examples_to_features
 from transformers.file_utils import add_end_docstrings, is_tf_available, is_torch_available
 from transformers.modelcard import ModelCard
@@ -68,17 +70,11 @@ ONNX_CACHE_DIR = Path(os.path.dirname(__file__)).parent.joinpath(".onnx")
 
 logger = logging.get_logger(__name__)
 
-from os import environ
-
-from psutil import cpu_count
-
 
 # Constants from the performance optimization available in onnxruntime
 # It needs to be done before importing onnxruntime
-environ["OMP_NUM_THREADS"] = str(cpu_count(logical=True))
-environ["OMP_WAIT_POLICY"] = "ACTIVE"
-
-from onnxruntime import GraphOptimizationLevel, InferenceSession, SessionOptions, get_all_providers
+os.environ["OMP_NUM_THREADS"] = str(cpu_count(logical=True))
+os.environ["OMP_WAIT_POLICY"] = "ACTIVE"
 
 
 def create_model_for_provider(model_path: str, provider: str) -> InferenceSession:
