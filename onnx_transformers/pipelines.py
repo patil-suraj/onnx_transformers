@@ -559,6 +559,7 @@ class Pipeline(_ScikitCompat):
 
             self.onnx_model = create_model_for_provider(str(graph_path), "CPUExecutionProvider")
             self.input_names = json.load(open(input_names_path))
+            self.framework = "np"
             self._warup_onnx_graph()
 
         # TODO: handle this
@@ -721,12 +722,13 @@ class Pipeline(_ScikitCompat):
             json.dump(self.input_names, f)
 
     def _forward_onnx(self, inputs, return_tensors=False):
-        inputs_onnx = {k: v.cpu().detach().numpy() for k, v in inputs.items() if k in self.input_names}
+        # inputs_onnx = {k: v.cpu().detach().numpy() for k, v in inputs.items() if k in self.input_names}
+        inputs_onnx = {k: v for k, v in inputs.items() if k in self.input_names}
         predictions = self.onnx_model.run(None, inputs_onnx)
         return predictions
 
     def _warup_onnx_graph(self, n=10):
-        model_inputs = self.tokenizer("My name is Bert", return_tensors="pt")
+        model_inputs = self.tokenizer("My name is Bert", return_tensors="np")
         for _ in range(n):
             self._forward_onnx(model_inputs)
 
@@ -1103,7 +1105,7 @@ class TokenClassificationPipeline(Pipeline):
                 )
                 entities = self._forward_onnx(tokens)[0]
                 entities = entities.squeeze(0)
-                input_ids = tokens["input_ids"].cpu().numpy()[0]
+                input_ids = tokens["input_ids"][0]
             else:
                 tokens = self.tokenizer(
                     sentence,
@@ -1426,7 +1428,8 @@ class QuestionAnsweringPipeline(Pipeline):
 
             # Manage tensor allocation on correct device
             if self.onnx:
-                fw_args = {k: torch.tensor(v) for (k, v) in fw_args.items()}
+                # fw_args = {k: torch.tensor(v) for (k, v) in fw_args.items()}
+                fw_args = {k: np.array(v) for (k, v) in fw_args.items()}
                 start, end = self._forward_onnx(fw_args)[:2]
             else:
                 with self.device_placement():
