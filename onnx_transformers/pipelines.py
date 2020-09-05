@@ -506,7 +506,7 @@ class Pipeline(_ScikitCompat):
 
         Input -> Tokenization -> Model Inference -> Post-Processing (task dependent) -> Output
 
-    Pipeline supports running on CPU or GPU through the device argument (see below).
+    Pipeline supports running on CPU or GPU through the device argument or using onnx runtime (see below).
 
     Some pipeline, like for instance :class:`~transformers.FeatureExtractionPipeline` (:obj:`'feature-extraction'` )
     output large tensor object as nested-lists. In order to avoid dumping such large structure as textual data we
@@ -1656,15 +1656,9 @@ def pipeline(
             - :obj:`"sentiment-analysis"`: will return a :class:`~transformers.TextClassificationPipeline`.
             - :obj:`"ner"`: will return a :class:`~transformers.TokenClassificationPipeline`.
             - :obj:`"question-answering"`: will return a :class:`~transformers.QuestionAnsweringPipeline`.
-            - :obj:`"fill-mask"`: will return a :class:`~transformers.FillMaskPipeline`.
-            - :obj:`"summarization"`: will return a :class:`~transformers.SummarizationPipeline`.
-            - :obj:`"translation_xx_to_yy"`: will return a :class:`~transformers.TranslationPipeline`.
-            - :obj:`"text-generation"`: will return a :class:`~transformers.TextGenerationPipeline`.
-            - :obj:`"conversation"`: will return a :class:`~transformers.ConversationalPipeline`.
-        model (:obj:`str` or :obj:`~transformers.PreTrainedModel` or :obj:`~transformers.TFPreTrainedModel`, `optional`):
-            The model that will be used by the pipeline to make predictions. This can be a model identifier or an
-            actual instance of a pretrained model inheriting from :class:`~transformers.PreTrainedModel` (for PyTorch)
-            or :class:`~transformers.TFPreTrainedModel` (for TensorFlow).
+            - :obj:`"zero-shot-classification"`: will return a :class:`~transformers.ZeroShotClassificationPipeline`.
+        model (:obj:`str`, `optional`):
+            The model that will be used by the pipeline to make predictions. This should be a model identifier
 
             If not provided, the default for the :obj:`task` will be loaded.
         config (:obj:`str` or :obj:`~transformers.PretrainedConfig`, `optional`):
@@ -1702,11 +1696,6 @@ def pipeline(
 
         # Question answering pipeline, specifying the checkpoint identifier
         pipeline('question-answering', model='distilbert-base-cased-distilled-squad', tokenizer='bert-base-cased')
-
-        # Named entity recognition pipeline, passing in a specific model and tokenizer
-        model = AutoModelForTokenClassification.from_pretrained("dbmdz/bert-large-cased-finetuned-conll03-english")
-        tokenizer = AutoTokenizer.from_pretrained("bert-base-cased")
-        pipeline('ner', model=model, tokenizer=tokenizer)
     """
     # Retrieve the task
     if task not in SUPPORTED_TASKS:
@@ -1750,9 +1739,8 @@ def pipeline(
             tokenizer = AutoTokenizer.from_pretrained(tokenizer)
 
     # Instantiate config if needed
-    # if isinstance(config, str):
-    #     config = AutoConfig.from_pretrained(config)
-    config = AutoConfig.from_pretrained(model)
+    if isinstance(config, str):
+        config = AutoConfig.from_pretrained(config)
 
     # Instantiate modelcard if needed
     if isinstance(modelcard, str):
