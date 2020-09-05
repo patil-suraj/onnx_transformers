@@ -3,14 +3,12 @@
 Accelerated NLP pipelines for fast inference 🚀 on CPU. Built with 🤗Transformers and ONNX runtime.
 
 ## Installation:
----
 
 ```bash
 pip install git+https://github.com/patil-suraj/onnx_transformers
 ```
 
 ## Usage:
----
 
 > *NOTE* : This is an experimental project and only tested with PyTorch
 
@@ -55,7 +53,6 @@ The key difference between HF pipeline and onnx_transformers is that the `model`
 
 
 ## Benchmarks
----
 
 For detailed benchmarks and other information refer to this blog post and notebook.
 - [Accelerate your NLP pipelines using Hugging Face Transformers and ONNX Runtime](https://medium.com/microsoftazure/accelerate-your-nlp-pipelines-using-hugging-face-transformers-and-onnx-runtime-2443578f4333)
