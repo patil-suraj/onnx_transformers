@@ -1735,7 +1735,10 @@ def pipeline(
             tokenizer = AutoTokenizer.from_pretrained(tokenizer)
 
     # Instantiate config
-    config = AutoConfig.from_pretrained(model)
+    if config is not None and isinstance(config, str):
+        config = AutoConfig.from_pretrained(config)
+    elif config is None:
+        config = AutoConfig.from_pretrained(model)
 
     # Instantiate modelcard if needed
     if isinstance(modelcard, str):
@@ -1743,7 +1746,6 @@ def pipeline(
 
     # Instantiate model if needed
     graph_name = f"{os.path.basename(model)}.onnx"
-    # graph_path = Path(f"onnx/{model}/{graph_name}")
     graph_path = ONNX_CACHE_DIR.joinpath(model, graph_name)
 
     # TODO: assert when model is not `str`
