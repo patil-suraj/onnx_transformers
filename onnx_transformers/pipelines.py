@@ -549,10 +549,10 @@ class Pipeline(_ScikitCompat):
         # Export the graph
         if onnx:
             input_names_path = graph_path.parent.joinpath(f"{os.path.basename(graph_path)}.input_names.json")
-            print(input_names_path)
             if not graph_path.exists() or not input_names_path.exists():
                 self._export_onnx_graph(input_names_path)
 
+            logger.info(f"loading onnx graph from {self.graph_path.as_posix()}")
             self.onnx_model = create_model_for_provider(str(graph_path), "CPUExecutionProvider")
             self.input_names = json.load(open(input_names_path))
             self.framework = "np"
@@ -704,8 +704,9 @@ class Pipeline(_ScikitCompat):
 
         # create parent dir
         if not self.graph_path.parent.exists():
-            print(f"Creating folder {self.graph_path.parent}")
             os.makedirs(self.graph_path.parent.as_posix())
+       
+        logger.info(f"Saving onnx graph at { self.graph_path.as_posix()}")
 
         if self.framework == "pt":
             convert_pytorch(self, opset=11, output=self.graph_path, use_external_format=False)
