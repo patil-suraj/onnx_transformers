@@ -14,10 +14,12 @@ from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Optional, Sequence,
 
 import numpy as np
 from onnxruntime import GraphOptimizationLevel, InferenceSession, SessionOptions, get_all_providers
+from onnxruntime_tools import optimizer
+from onnxruntime_tools.transformers.onnx_model_bert import BertOptimizationOptions
 from psutil import cpu_count
 from transformers.configuration_auto import AutoConfig
 from transformers.configuration_utils import PretrainedConfig
-from transformers.convert_graph_to_onnx import convert_pytorch, convert_tensorflow, infer_shapes
+from transformers.convert_graph_to_onnx import convert_pytorch, convert_tensorflow, infer_shapes, quantize
 from transformers.data import SquadExample, squad_convert_examples_to_features
 from transformers.file_utils import add_end_docstrings, is_tf_available, is_torch_available
 from transformers.modelcard import ModelCard
@@ -524,6 +526,7 @@ class Pipeline(_ScikitCompat):
         device: int = -1,
         binary_output: bool = False,
         onnx: bool = True,
+        quantized: bool = False,
         graph_path: Optional[Path] = None,
     ):
 
@@ -531,6 +534,7 @@ class Pipeline(_ScikitCompat):
             framework = get_framework(model)
 
         self.onnx = onnx
+        self.quantized = quantized
         self.graph_path = graph_path
         self.task = task
         self.model = model
@@ -555,7 +559,18 @@ class Pipeline(_ScikitCompat):
             logger.info(f"loading onnx graph from {self.graph_path.as_posix()}")
             self.onnx_model = create_model_for_provider(str(graph_path), "CPUExecutionProvider")
             self.input_names = json.load(open(input_names_path))
-            self.framework = "np"
+            self.framework = "pt"
+            if quantized:
+                onnx_opt_model_path = graph_path.parent.joinpath(f"{graph_path.stem}-opt.onnx")
+                quantized_model_path = graph_path.parent.joinpath(f"{graph_path.stem}-opt-quantized.onnx")
+                if not quantized_model_path.exists() or not onnx_opt_model_path.exists():
+                    opt_options = BertOptimizationOptions('bert')
+                    opt_options.enable_embed_layer_norm = False
+                    onnx_opt_model = optimizer.optimize_model(graph_path.as_posix(),'bert',num_heads=12,hidden_size=768,optimization_options=opt_options)
+                    onnx_opt_model.save_model_to_file(onnx_opt_model_path.as_posix())
+                    quantized_model_path = quantize(onnx_opt_model_path)
+
+                self.onnx_model = create_model_for_provider(quantized_model_path.as_posix(), "CPUExecutionProvider")
             self._warup_onnx_graph()
 
         # TODO: handle this
@@ -705,7 +720,7 @@ class Pipeline(_ScikitCompat):
         # create parent dir
         if not self.graph_path.parent.exists():
             os.makedirs(self.graph_path.parent.as_posix())
-       
+
         logger.info(f"Saving onnx graph at { self.graph_path.as_posix()}")
 
         if self.framework == "pt":
@@ -720,12 +735,12 @@ class Pipeline(_ScikitCompat):
 
     def _forward_onnx(self, inputs, return_tensors=False):
         # inputs_onnx = {k: v.cpu().detach().numpy() for k, v in inputs.items() if k in self.input_names}
-        inputs_onnx = {k: v for k, v in inputs.items() if k in self.input_names}
+        inputs_onnx = {k: v.cpu().detach().numpy() for k, v in inputs.items()}
         predictions = self.onnx_model.run(None, inputs_onnx)
         return predictions
 
     def _warup_onnx_graph(self, n=10):
-        model_inputs = self.tokenizer("My name is Bert", return_tensors="np")
+        model_inputs = self.tokenizer("My name is Bert", return_tensors="pt")
         for _ in range(n):
             self._forward_onnx(model_inputs)
 
@@ -1042,6 +1057,7 @@ class TokenClassificationPipeline(Pipeline):
         device: int = -1,
         binary_output: bool = False,
         onnx: bool = True,
+        quantized: bool = False,
         graph_path: Optional[str] = None,
         ignore_labels=["O"],
         task: str = "",
@@ -1058,6 +1074,7 @@ class TokenClassificationPipeline(Pipeline):
             task=task,
             config=config,
             onnx=onnx,
+            quantized=quantized,
             graph_path=graph_path,
         )
 
@@ -1634,6 +1651,7 @@ def pipeline(
     tokenizer: Optional[Union[str, PreTrainedTokenizer]] = None,
     framework: Optional[str] = None,
     onnx: bool = True,
+    quantized: bool = False,
     **kwargs
 ) -> Pipeline:
     """
@@ -1722,10 +1740,11 @@ def pipeline(
 
     modelcard = None
     # Try to infer modelcard from model or config name (if provided as str)
-    if isinstance(model, str):
-        modelcard = model
-    elif isinstance(config, str):
-        modelcard = config
+    # TODO: Comment modelcard (below 4 lines) if working with local models.
+    # if isinstance(model, str):
+    #     modelcard = model
+    # elif isinstance(config, str):
+    #     modelcard = config
 
     # Instantiate tokenizer if needed
     if isinstance(tokenizer, (str, tuple)):
@@ -1775,6 +1794,7 @@ def pipeline(
         framework=framework,
         task=task,
         onnx=onnx,
+        quantized=quantized,
         graph_path=graph_path,
         config=config,
         **kwargs,
