@@ -2,7 +2,7 @@
 
 ![onnx_transformers](https://github.com/patil-suraj/onnx_transformers/blob/master/data/social_preview.jpeg?raw=True)
 
-Accelerated NLP pipelines for fast inference 🚀 on CPU. Built with 🤗Transformers and ONNX runtime.
+Accelerated NLP pipelines for fast inference 🚀 on CPU. Built with 🤗Transformers and ONNX runtime. +Plus quantize option 😊
 
 ## Installation:
 
@@ -41,7 +41,16 @@ from onnx_transformers import pipeline
 {'answer': 'highly performant single inference engine for multiple platforms and hardware', 'end': 94, 'score': 0.751201868057251, 'start': 18}
 ```
 
+```python
+from onnx_transformers import pipeline
+
+>>> nlp = pipeline("ner", model="mys/electra-base-turkish-cased-ner", onnx=True, quantized=True, grouped_entities=True)
+>>> nlp("adana kebap ülkemizin önemli lezzetlerinden biridir.")
+[{'entity_group': 'B-food', 'score': 0.869149774312973, 'word': 'adana kebap'}]
+```
+
 Set `onnx` to `False` for standard torch inference.
+Set `quantized` to `True` for quantize with Onnx. ( set `onnx` to True)
 
 You can create `Pipeline` objects for the following down-stream tasks:
 
