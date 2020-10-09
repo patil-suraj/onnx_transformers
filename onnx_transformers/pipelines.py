@@ -1741,10 +1741,10 @@ def pipeline(
     modelcard = None
     # Try to infer modelcard from model or config name (if provided as str)
     # TODO: Comment modelcard (below 4 lines) if working with local models.
-    # if isinstance(model, str):
-    #     modelcard = model
-    # elif isinstance(config, str):
-    #     modelcard = config
+    if isinstance(model, str):
+        modelcard = model
+    elif isinstance(config, str):
+        modelcard = config
 
     # Instantiate tokenizer if needed
     if isinstance(tokenizer, (str, tuple)):
