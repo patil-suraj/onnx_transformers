@@ -564,12 +564,7 @@ class Pipeline(_ScikitCompat):
                 onnx_opt_model_path = graph_path.parent.joinpath(f"{graph_path.stem}-opt.onnx")
                 quantized_model_path = graph_path.parent.joinpath(f"{graph_path.stem}-opt-quantized.onnx")
                 if not quantized_model_path.exists() or not onnx_opt_model_path.exists():
-                    opt_options = BertOptimizationOptions('bert')
-                    opt_options.enable_embed_layer_norm = False
-                    onnx_opt_model = optimizer.optimize_model(graph_path.as_posix(),'bert',num_heads=12,hidden_size=768,optimization_options=opt_options)
-                    onnx_opt_model.save_model_to_file(onnx_opt_model_path.as_posix())
-                    quantized_model_path = quantize(onnx_opt_model_path)
-
+                    self._create_quantized_graph(onnx_opt_model_path)
                 self.onnx_model = create_model_for_provider(quantized_model_path.as_posix(), "CPUExecutionProvider")
             self._warup_onnx_graph()
 
@@ -708,6 +703,20 @@ class Pipeline(_ScikitCompat):
             return predictions
         else:
             return predictions.numpy()
+
+    def _create_quantized_graph(self, onnx_opt_model_path):
+        #TODO: add option gpt2 if need
+        opt_options = BertOptimizationOptions('bert')
+        opt_options.enable_embed_layer_norm = False
+
+        onnx_opt_model = optimizer.optimize_model(self.graph_path.as_posix(),
+                            'bert_tf' if self.framework == "tf" else "bert",
+                            num_heads=self.config.num_attention_heads,
+                            hidden_size=self.config.hidden_size,
+                            optimization_options=opt_options)
+
+        onnx_opt_model.save_model_to_file(onnx_opt_model_path.as_posix())
+        quantized_model_path = quantize(onnx_opt_model_path)
 
     def _export_onnx_graph(self, input_names_path: Path):
         # if graph exists, but we are here then it means something went wrong in previous load
@@ -1652,6 +1661,7 @@ def pipeline(
     framework: Optional[str] = None,
     onnx: bool = True,
     quantized: bool = False,
+    local_model:bool = False,
     **kwargs
 ) -> Pipeline:
     """
@@ -1740,11 +1750,13 @@ def pipeline(
 
     modelcard = None
     # Try to infer modelcard from model or config name (if provided as str)
-    # TODO: Comment modelcard (below 4 lines) if working with local models.
-    if isinstance(model, str):
-        modelcard = model
-    elif isinstance(config, str):
-        modelcard = config
+    # TODO: Disable modelcard (below 4 lines) if working with local models.
+    # searches modelcard.json
+    if not local_model:
+        if isinstance(model, str):
+            modelcard = model
+        elif isinstance(config, str):
+            modelcard = config
 
     # Instantiate tokenizer if needed
     if isinstance(tokenizer, (str, tuple)):
