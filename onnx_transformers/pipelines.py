@@ -857,7 +857,8 @@ class TextClassificationPipeline(Pipeline):
             If ``self.return_all_scores=True``, one such dictionary is returned per label.
         """
         outputs = super().__call__(*args, **kwargs)
-        scores = np.exp(outputs) / np.exp(outputs).sum(-1, keepdims=True)
+        #scores = np.exp(outputs) / np.exp(outputs).sum(-1, keepdims=True)
+        scores = outputs
         if self.return_all_scores:
             return [
                 [{"label": self.config.id2label[i], "score": score} for i, score in enumerate(item)] 
