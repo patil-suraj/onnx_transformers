@@ -860,8 +860,8 @@ class TextClassificationPipeline(Pipeline):
         scores = np.exp(outputs) / np.exp(outputs).sum(-1, keepdims=True)
         if self.return_all_scores:
             return [
-                [{"label": self.config.id2label[i], "score": score.item()} for i, score in enumerate(item)]
-                for item in scores
+                [{"label": nlp.config.id2label[i], "score": score} for i, score in enumerate(item)] 
+                for item in scores[0]
             ]
         else:
             return [{"label": self.config.id2label[item.argmax()], "score": item.max().item()} for item in scores]
