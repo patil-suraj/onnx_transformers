@@ -862,7 +862,7 @@ class TextClassificationPipeline(Pipeline):
             return [
                 [{"label": self.config.id2label[i], "score": score} for i, score in enumerate(item)] 
                 for item in scores[0]
-            ]
+            ][0]
         else:
             return [{"label": self.config.id2label[item.argmax()], "score": item.max().item()} for item in scores]
 
