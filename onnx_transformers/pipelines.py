@@ -15,13 +15,12 @@ from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Optional, Sequence,
 import numpy as np
 from onnxruntime import GraphOptimizationLevel, InferenceSession, SessionOptions, get_all_providers
 from psutil import cpu_count
-from transformers.configuration_auto import AutoConfig
+from transformers import AutoConfig, AutoTokenizer
 from transformers.configuration_utils import PretrainedConfig
 from transformers.convert_graph_to_onnx import convert_pytorch, convert_tensorflow, infer_shapes
 from transformers.data import SquadExample, squad_convert_examples_to_features
 from transformers.file_utils import add_end_docstrings, is_tf_available, is_torch_available
 from transformers.modelcard import ModelCard
-from transformers.tokenization_auto import AutoTokenizer
 from transformers.tokenization_bert import BasicTokenizer
 from transformers.tokenization_utils import PreTrainedTokenizer
 from transformers.tokenization_utils_base import BatchEncoding, PaddingStrategy
