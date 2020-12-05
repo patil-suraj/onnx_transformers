@@ -28,7 +28,7 @@ from transformers.utils import logging
 
 if is_tf_available():
     import tensorflow as tf
-    from transformers.modeling_tf_auto import (
+    from transformers.models.auto import (
         TF_MODEL_FOR_QUESTION_ANSWERING_MAPPING,
         TF_MODEL_FOR_SEQUENCE_CLASSIFICATION_MAPPING,
         TF_MODEL_FOR_TOKEN_CLASSIFICATION_MAPPING,
@@ -43,7 +43,7 @@ if is_tf_available():
 
 if is_torch_available():
     import torch
-    from transformers.modeling_auto import (
+    from transformers.models.auto import (
         MODEL_FOR_MASKED_LM_MAPPING,
         MODEL_FOR_QUESTION_ANSWERING_MAPPING,
         MODEL_FOR_SEQ_TO_SEQ_CAUSAL_LM_MAPPING,
